@@ -32,6 +32,8 @@ CREATE INDEX IF NOT EXISTS main.queue_due_leases
     ON queue_jobs(lease_until,queue) WHERE status='leased';
 CREATE INDEX IF NOT EXISTS main.queue_due_ttl
     ON queue_jobs(expires_at,queue) WHERE status='pending' AND expires_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS main.queue_ttl_by_queue
+    ON queue_jobs(queue,expires_at) WHERE status='pending' AND expires_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS main.queue_terminal
     ON queue_jobs(queue, completed_at) WHERE status IN ('done','dead','cancelled','expired');
 CREATE UNIQUE INDEX IF NOT EXISTS main.queue_dedup

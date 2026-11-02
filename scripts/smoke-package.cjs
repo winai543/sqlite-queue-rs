@@ -47,10 +47,19 @@ try {
       assert.equal(job.id,id);
       assert.equal(job.data.installed,true);
       assert.equal(queue.ack(id,job.receipt),true);
+      queue.pushBatch([{data:1},{data:2}]);
+      assert.deepEqual(queue.ackBatch(queue.claimBatch(2)),[true,true]);
     } finally { store.close(); }
+    const sharded=new ShardedSQLiteQueue({directory:'./smoke-shards'});
+    try {
+      const queue=sharded.queue('smoke');
+      const ref=queue.push('tenant-a',{installed:true});
+      assert.equal(queue.get(ref).data.installed,true);
+      assert.deepEqual(queue.ackBatch(queue.claimBatch(10)),[true]);
+    } finally { sharded.close(); }
   `;
-  run(process.execPath, ['-e', `const assert=require('node:assert/strict'); const {SQLiteQueue,resolveExtension}=require('sqlite-queue-rs'); ${common}`], folder, consumerEnv);
-  run(process.execPath, ['--input-type=module', '-e', `import assert from 'node:assert/strict'; import {SQLiteQueue,resolveExtension} from 'sqlite-queue-rs'; ${common}`], folder, consumerEnv);
-  console.log('Installed tarball without Rust/Cargo: normal npm install, native manifests, CommonJS and ESM enqueue/claim/ack verified.');
+  run(process.execPath, ['-e', `const assert=require('node:assert/strict'); const {SQLiteQueue,ShardedSQLiteQueue,resolveExtension}=require('sqlite-queue-rs'); ${common}`], folder, consumerEnv);
+  run(process.execPath, ['--input-type=module', '-e', `import assert from 'node:assert/strict'; import {SQLiteQueue,ShardedSQLiteQueue,resolveExtension} from 'sqlite-queue-rs'; ${common}`], folder, consumerEnv);
+  console.log('Installed tarball without Rust/Cargo: normal npm install, native manifests, CommonJS and ESM single-file/batch/sharded APIs verified.');
 } catch (error) { console.error(error.message); process.exitCode = 1; }
 finally { if (folder) rmSync(folder, { recursive: true, force: true }); }

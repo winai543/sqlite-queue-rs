@@ -183,6 +183,67 @@ class FeatureTests(unittest.TestCase):
         scalar(self.db, "SELECT queue_reap('mail')")
         self.assertEqual(self.get(job_id)['status'], 'expired')
 
+    def test_reap_cost_does_not_scale_with_unrelated_rows(self):
+        # Count SQLite VM work rather than asserting wall-clock timing. The old
+        # combined TTL predicate scanned all rows of this queue on every claim.
+        def measured_reap():
+            calls = 0
+            def progress():
+                nonlocal calls
+                calls += 1
+                return 0
+            self.db.set_progress_handler(progress, 100)
+            try:
+                self.assertEqual(scalar(self.db, "SELECT queue_reap('mail')"), 0)
+            finally:
+                self.db.set_progress_handler(None, 0)
+            return calls
+
+        baseline = measured_reap()
+        self.db.execute('BEGIN')
+        try:
+            self.db.executemany(
+                'INSERT INTO queue_jobs(queue,payload,status,available_at,expires_at,completed_at) VALUES(?,?,?,?,?,?)',
+                [('mail', 'history', 'done', 0, None, 1)] * 10000
+                + [('mail', 'ready without TTL', 'pending', 0, None, None)] * 10000
+                + [('mail', 'future TTL', 'pending', 0, 9999999999, None)] * 10000
+                + [('other', 'expired in another queue', 'pending', 0, 0, None)] * 10000,
+            )
+            self.db.execute('COMMIT')
+        except BaseException:
+            self.db.execute('ROLLBACK')
+            raise
+        loaded = measured_reap()
+        self.assertLessEqual(loaded, baseline * 5 + 100,
+                             f'maintenance scanned unrelated rows: baseline={baseline}, loaded={loaded}')
+        self.assertEqual(scalar(self.db, "SELECT count(*) FROM queue_jobs WHERE queue='other' AND status='pending'"), 10000)
+
+    def test_reap_preserves_ttl_precedence_and_inflight_work(self):
+        pending = self.push(ttl_seconds=60)
+        expired = self.push(queue='leased-expired', ttl_seconds=60, max_attempts=1)
+        dead = self.push(queue='leased-dead', max_attempts=1)
+        retry = self.push(queue='leased-retry', retry_base_seconds=2)
+        active = self.push(queue='leased-active', ttl_seconds=60)
+        for queue in ['leased-expired', 'leased-dead', 'leased-retry', 'leased-active']:
+            claim(self.db, queue)
+        original_available = self.get(expired)['available_at']
+        self.db.execute('UPDATE queue_jobs SET expires_at=0 WHERE id IN (?,?,?)', (pending, expired, active))
+        self.db.execute('UPDATE queue_jobs SET lease_until=0 WHERE id IN (?,?,?)', (expired, dead, retry))
+        for queue, count in [('mail', 1), ('leased-expired', 1), ('leased-dead', 1),
+                             ('leased-retry', 1), ('leased-active', 0)]:
+            self.assertEqual(scalar(self.db, 'SELECT queue_reap(?)', (queue,)), count)
+            self.assertEqual(scalar(self.db, 'SELECT queue_reap(?)', (queue,)), 0)
+        self.assertEqual(self.get(pending)['status'], 'expired')
+        expired_job = self.get(expired)
+        self.assertEqual(expired_job['status'], 'expired')  # TTL precedes exhausted attempts.
+        self.assertEqual(expired_job['last_error'], 'job TTL expired')
+        self.assertEqual(expired_job['available_at'], original_available)
+        self.assertEqual(self.get(dead)['status'], 'dead')
+        retry_job = self.get(retry)
+        self.assertEqual(retry_job['status'], 'pending')
+        self.assertEqual(retry_job['available_at'] - retry_job['updated_at'], 2)
+        self.assertEqual(self.get(active)['status'], 'leased')
+
     def test_reschedule_and_priority(self):
         first = self.push()
         second = self.push(delay=60)

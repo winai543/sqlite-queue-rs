@@ -1,4 +1,5 @@
 import { SQLiteQueue, PermanentJobError, type ClaimedJob } from 'sqlite-queue-rs';
+import { ShardedSQLiteQueue, type ShardJobRef } from 'sqlite-queue-rs';
 const store = new SQLiteQueue(':memory:');
 const queue = store.queue<{ to: string }>('email');
 const id: string = queue.push({ to: 'alice@example.com' }, { priority: 10 });
@@ -22,3 +23,26 @@ store.transaction(async () => queue.push({ to: 'async' }));
 void key;
 await worker.close();
 store.close();
+
+const sharded = new ShardedSQLiteQueue({ directory: './test-shards', shardCount: 4 });
+const routed = sharded.queue<{ tenantId: string; to: string }>('email');
+const ref: ShardJobRef = routed.push('tenant-a', { tenantId: 'tenant-a', to: 'alice' });
+routed.cancel(ref);
+const shardedWorker = routed.work(async job => {
+  const shard: string = job.shard;
+  const to: string = job.data.to;
+  void shard; void to;
+}, { batchSize: 100, ackBatchSize: 100, concurrency: 8, flushIntervalMs: 10 });
+shardedWorker.on('completed', job => { const shard: string = job.shard; void shard; });
+const claimed = routed.claimBatch(100);
+routed.ackBatch(claimed);
+// @ts-expect-error a bare ID is ambiguous across shards
+routed.get(ref.id);
+// @ts-expect-error shard-scoped pagination is required
+routed.list({ limit: 10 });
+// @ts-expect-error tenant routing keys must be strings
+routed.push(123, { tenantId: 'tenant-a', to: 'alice' });
+// @ts-expect-error tenant transactions cannot cross await
+sharded.transactionFor('tenant-a', async () => 1);
+await shardedWorker.close();
+sharded.close();

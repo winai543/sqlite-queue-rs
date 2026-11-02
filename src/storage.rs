@@ -106,15 +106,16 @@ pub fn reap(db: &Connection, queue: &str) -> Result<i64> {
     let expired = db.execute(&format!("UPDATE main.queue_jobs
         SET status='expired',receipt=NULL,worker=NULL,lease_until=NULL,updated_at={NOW},completed_at={NOW},
             last_error='job TTL expired'
-        WHERE queue=?1 AND expires_at<={NOW} AND
-            (status='pending' OR (status='leased' AND lease_until<={NOW}))"), [queue])?;
+        WHERE queue=?1 AND status='pending' AND expires_at<={NOW}"), [queue])?;
     let retried = db.execute(
         &format!(
             "UPDATE main.queue_jobs
-        SET status=CASE WHEN attempts>=max_attempts THEN 'dead' ELSE 'pending' END,
+        SET status=CASE WHEN expires_at<={NOW} THEN 'expired'
+                        WHEN attempts>=max_attempts THEN 'dead' ELSE 'pending' END,
             receipt=NULL,worker=NULL,lease_until=NULL,updated_at={NOW},
-            completed_at=CASE WHEN attempts>=max_attempts THEN {NOW} ELSE NULL END,
-            available_at={NOW}+{BACKOFF},last_error='lease expired'
+            completed_at=CASE WHEN expires_at<={NOW} OR attempts>=max_attempts THEN {NOW} ELSE NULL END,
+            available_at=CASE WHEN expires_at<={NOW} THEN available_at ELSE {NOW}+{BACKOFF} END,
+            last_error=CASE WHEN expires_at<={NOW} THEN 'job TTL expired' ELSE 'lease expired' END
         WHERE queue=?1 AND status='leased' AND lease_until<={NOW}"
         ),
         [queue],

@@ -109,6 +109,8 @@ export class Queue<T = unknown> {
   claimBatch(count: number, options?: ClaimOptions): ClaimedJob<T>[];
   get(id: JobId): Job<T> | null;
   ack(id: JobId, receipt: string): boolean;
+  /** Atomic within this database. Results correspond to the input receipts. */
+  ackBatch(jobs: Array<{ id: JobId; receipt: string }>): boolean[];
   retry(id: JobId, receipt: string, options?: RetryOptions): boolean;
   fail(id: JobId, receipt: string, error: unknown, options?: { permanent?: boolean }): boolean;
   heartbeat(id: JobId, receipt: string, leaseSeconds?: number): boolean;
@@ -125,6 +127,12 @@ export class Queue<T = unknown> {
 }
 export interface WorkerOptions {
   concurrency?: number;
+  /** Claim at most this many jobs per call; default 1. Queued jobs receive heartbeats. */
+  batchSize?: number;
+  /** Maximum finalizations per transaction, default batchSize. */
+  ackBatchSize?: number;
+  /** Flush completed outcomes after this delay, default 10ms. */
+  flushIntervalMs?: number;
   leaseSeconds?: number;
   pollIntervalMs?: number;
   heartbeatIntervalMs?: number;
@@ -136,18 +144,83 @@ export interface WorkerContext {
   signal: AbortSignal;
   heartbeat(): boolean;
 }
-export type JobHandler<T = unknown> = (job: ClaimedJob<T>, context: WorkerContext) => void | Promise<void>;
-export class QueueWorker<T = unknown> extends EventEmitter {
-  constructor(queue: Queue<T>, handler: JobHandler<T>, options?: WorkerOptions);
+export type JobHandler<T = unknown, J extends ClaimedJob<T> = ClaimedJob<T>> = (job: J, context: WorkerContext) => void | Promise<void>;
+export class QueueWorker<T = unknown, J extends ClaimedJob<T> = ClaimedJob<T>> extends EventEmitter {
+  constructor(queue: Queue<T> | ShardedQueue<T>, handler: JobHandler<T, J>, options?: WorkerOptions);
   readonly closed: Promise<void>;
   lastError: unknown;
-  /** Stop claiming, finish current jobs with heartbeats, then resolve. */
+  /** Stop claiming, drain all already reserved jobs with heartbeats, flush, then resolve. */
   close(): Promise<void>;
-  on(event: 'completed', listener: (job: ClaimedJob<T>) => void): this;
-  on(event: 'failed', listener: (job: ClaimedJob<T>, error: unknown) => void): this;
-  on(event: 'leaseLost', listener: (job: ClaimedJob<T>, error: LeaseLostError) => void): this;
-  on(event: 'workerError', listener: (error: unknown, job?: ClaimedJob<T>) => void): this;
+  on(event: 'completed', listener: (job: J) => void): this;
+  on(event: 'failed', listener: (job: J, error: unknown) => void): this;
+  on(event: 'leaseLost', listener: (job: J, error: LeaseLostError) => void): this;
+  on(event: 'workerError', listener: (error: unknown, job?: J) => void): this;
 }
 export class PermanentJobError extends Error { constructor(message: string, options?: ErrorOptions); }
-export class LeaseLostError extends Error { constructor(jobId: string); readonly jobId: string; }
+export class LeaseLostError extends Error { constructor(jobId: string, shard?: string | null); readonly jobId: string; readonly shard: string | null; }
 export function resolveExtension(explicitPath?: string): string;
+
+export interface ShardRef { shard: string; id: JobId; }
+export interface ShardJobRef extends ShardRef { id: string; }
+export interface ShardedJob<T = unknown> extends Job<T> { shard: string; }
+export interface ShardedClaimedJob<T = unknown> extends ClaimedJob<T> { shard: string; }
+export interface ShardedSQLiteQueueOptions extends SQLiteQueueOptions {
+  directory: string;
+  /** Fixed for the directory's lifetime; default 4, range 1..64. */
+  shardCount?: number;
+}
+export interface ShardedQueueStats extends QueueStats {
+  shards: Record<string, QueueStats>;
+  pausedShards: string[];
+}
+export class ShardOperationError<T = unknown> extends Error {
+  constructor(operation: string, partialResults: T, errors: Record<string, Error>);
+  readonly operation: string;
+  readonly partialResults: T;
+  readonly errors: Record<string, Error>;
+}
+export class ShardedSQLiteQueue {
+  constructor(options: ShardedSQLiteQueueOptions);
+  readonly directory: string;
+  readonly shardCount: number;
+  readonly shardIds: readonly string[];
+  readonly isClosed: boolean;
+  route(tenantId: string): string;
+  shard(shardId: string): SQLiteQueue;
+  queue<T = unknown>(name: string): ShardedQueue<T>;
+  /** Atomic only for the tenant's selected database; synchronous callback. */
+  transactionFor<T>(tenantId: string, callback: (store: SQLiteQueue, shard: string) => T & (T extends PromiseLike<unknown> ? never : unknown)): T;
+  startBackground(intervalMs?: number): Record<string, boolean>;
+  stopBackground(): Record<string, boolean>;
+  backgroundStatus(): Record<string, BackgroundStatus>;
+  close(): void;
+  [Symbol.dispose](): void;
+}
+export class ShardedQueue<T = unknown> {
+  constructor(store: ShardedSQLiteQueue, name: string);
+  readonly store: ShardedSQLiteQueue;
+  readonly name: string;
+  push(tenantId: string, data: T, options?: PushOptions): ShardJobRef;
+  /** Validates all inputs first; commits per shard. SQL failures expose partialResults. */
+  pushBatch(jobs: Array<{ tenantId: string; data: T; options?: PushOptions }>): ShardJobRef[];
+  claim(options?: ClaimOptions): ShardedClaimedJob<T> | null;
+  /** One shard per atomic batch; rotates the starting shard on each attempt. */
+  claimBatch(count: number, options?: ClaimOptions): ShardedClaimedJob<T>[];
+  get(ref: ShardRef): ShardedJob<T> | null;
+  ack(ref: ShardRef, receipt: string): boolean;
+  /** Atomic per shard. A cross-shard failure exposes committed boolean/null results. */
+  ackBatch(jobs: Array<ShardRef & { receipt: string }>): boolean[];
+  retry(ref: ShardRef, receipt: string, options?: RetryOptions): boolean;
+  fail(ref: ShardRef, receipt: string, error: unknown, options?: { permanent?: boolean }): boolean;
+  heartbeat(ref: ShardRef, receipt: string, leaseSeconds?: number): boolean;
+  cancel(ref: ShardRef, reason?: string): boolean;
+  redrive(ref: ShardRef, delaySeconds?: number): boolean;
+  reschedule(ref: ShardRef, delaySeconds: number, priority?: number): boolean;
+  list(options: ListOptions & { shard: string }): ShardedJob<T>[];
+  stats(): ShardedQueueStats;
+  pause(): Record<string, boolean>;
+  resume(): Record<string, boolean>;
+  reap(): Record<string, number>;
+  purge(options?: PurgeOptions): Record<string, number>;
+  work(handler: JobHandler<T, ShardedClaimedJob<T>>, options?: WorkerOptions): QueueWorker<T, ShardedClaimedJob<T>>;
+}

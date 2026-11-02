@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "cpu": "Apple M1 Pro",
+    "node": "v22.14.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "payloadBytes": 251,
+    "journalMode": "WAL",
+    "synchronous": "FULL",
+    "handlers": "async no-op",
+    "background": false,
+    "rounds": 3,
+    "threadTiming": "includes start IPC/progress reporting, excludes thread startup and seeding"
+  },
+  "results": [
+    {
+      "scenario": "async_worker",
+      "round": 1,
+      "batchSize": 1,
+      "concurrency": 32,
+      "jobs": 20000,
+      "elapsedMs": 6569.359667,
+      "jobsPerSec": 3044.436750885541
+    },
+    {
+      "scenario": "async_worker",
+      "round": 1,
+      "batchSize": 100,
+      "concurrency": 32,
+      "jobs": 20000,
+      "elapsedMs": 1014.832042,
+      "jobsPerSec": 19707.694645297768
+    },
+    {
+      "scenario": "four_worker_threads",
+      "round": 1,
+      "shardCount": 1,
+      "workerThreads": 4,
+      "batchSize": 100,
+      "jobs": 20000,
+      "elapsedMs": 1088.1945419999993,
+      "jobsPerSec": 18379.066635678835
+    },
+    {
+      "scenario": "four_worker_threads",
+      "round": 1,
+      "shardCount": 4,
+      "workerThreads": 4,
+      "batchSize": 100,
+      "jobs": 20000,
+      "elapsedMs": 344.1263340000005,
+      "jobsPerSec": 58118.190978084145
+    },
+    {
+      "scenario": "async_worker",
+      "round": 2,
+      "batchSize": 100,
+      "concurrency": 32,
+      "jobs": 20000,
+      "elapsedMs": 985.9205839999995,
+      "jobsPerSec": 20285.609535463365
+    },
+    {
+      "scenario": "async_worker",
+      "round": 2,
+      "batchSize": 1,
+      "concurrency": 32,
+      "jobs": 20000,
+      "elapsedMs": 6354.067958,
+      "jobsPerSec": 3147.5898797744653
+    },
+    {
+      "scenario": "four_worker_threads",
+      "round": 2,
+      "shardCount": 4,
+      "workerThreads": 4,
+      "batchSize": 100,
+      "jobs": 20000,
+      "elapsedMs": 351.67612499999814,
+      "jobsPerSec": 56870.50834059351
+    },
+    {
+      "scenario": "four_worker_threads",
+      "round": 2,
+      "shardCount": 1,
+      "workerThreads": 4,
+      "batchSize": 100,
+      "jobs": 20000,
+      "elapsedMs": 1604.10225,
+      "jobsPerSec": 12468.033131927843
+    },
+    {
+      "scenario": "async_worker",
+      "round": 3,
+      "batchSize": 1,
+      "concurrency": 32,
+      "jobs": 20000,
+      "elapsedMs": 6161.279957999999,
+      "jobsPerSec": 3246.078759013599
+    },
+    {
+      "scenario": "async_worker",
+      "round": 3,
+      "batchSize": 100,
+      "concurrency": 32,
+      "jobs": 20000,
+      "elapsedMs": 995.1326670000017,
+      "jobsPerSec": 20097.82279612369
+    },
+    {
+      "scenario": "four_worker_threads",
+      "round": 3,
+      "shardCount": 1,
+      "workerThreads": 4,
+      "batchSize": 100,
+      "jobs": 20000,
+      "elapsedMs": 1011.5780000000013,
+      "jobsPerSec": 19771.090316317648
+    },
+    {
+      "scenario": "four_worker_threads",
+      "round": 3,
+      "shardCount": 4,
+      "workerThreads": 4,
+      "batchSize": 100,
+      "jobs": 20000,
+      "elapsedMs": 316.9728749999995,
+      "jobsPerSec": 63096.88171267031
+    }
+  ]
+}

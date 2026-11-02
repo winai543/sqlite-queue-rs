@@ -14,6 +14,10 @@ returned JSON in application memory. Functions using savepoints (`init`, `claim`
 - `queue_version()` returns the extension version, such as `0.3.0`, and works before initialization.
 - `queue_init()` atomically creates or migrates the schema, returning `1`. It is idempotent. Schema version is stored in `main.queue_schema`, independently of the application's `PRAGMA user_version`.
 
+Call `queue_init()` after upgrading the extension to add any new indexes, including
+the queue-scoped TTL index used by maintenance. This does not require changing schema
+version v2 or migrating job records. Node.js stores initialize automatically.
+
 ## Enqueue
 
 `queue_push(queue, payload [, delay_seconds [, options_json]])` returns an integer job ID.

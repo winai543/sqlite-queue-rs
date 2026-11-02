@@ -1,0 +1,269 @@
+{
+  "scenario": "claim_batch_100_ack_transaction",
+  "mode": "NORMAL",
+  "jobsPerRun": 1000,
+  "pairedRounds": 20,
+  "order": "alternating before/after",
+  "summary": {
+    "before": 20816.654855990593,
+    "after": 21056.676677361673
+  },
+  "results": [
+    {
+      "round": 1,
+      "label": "before",
+      "elapsedMs": 52.439958,
+      "jobsPerSec": 19069.427935087213
+    },
+    {
+      "round": 1,
+      "label": "after",
+      "elapsedMs": 50.56595899999999,
+      "jobsPerSec": 19776.15019622193
+    },
+    {
+      "round": 2,
+      "label": "after",
+      "elapsedMs": 48.043541999999945,
+      "jobsPerSec": 20814.452023541504
+    },
+    {
+      "round": 2,
+      "label": "before",
+      "elapsedMs": 50.41037499999999,
+      "jobsPerSec": 19837.186293496135
+    },
+    {
+      "round": 3,
+      "label": "before",
+      "elapsedMs": 46.33645800000005,
+      "jobsPerSec": 21581.27839637632
+    },
+    {
+      "round": 3,
+      "label": "after",
+      "elapsedMs": 48.87895900000001,
+      "jobsPerSec": 20458.700849173154
+    },
+    {
+      "round": 4,
+      "label": "after",
+      "elapsedMs": 48.20987500000001,
+      "jobsPerSec": 20742.63830802299
+    },
+    {
+      "round": 4,
+      "label": "before",
+      "elapsedMs": 47.787291000000096,
+      "jobsPerSec": 20926.06588642989
+    },
+    {
+      "round": 5,
+      "label": "before",
+      "elapsedMs": 48.34695899999997,
+      "jobsPerSec": 20683.824188404502
+    },
+    {
+      "round": 5,
+      "label": "after",
+      "elapsedMs": 47.490875000000074,
+      "jobsPerSec": 21056.676677361673
+    },
+    {
+      "round": 6,
+      "label": "after",
+      "elapsedMs": 65.84295800000007,
+      "jobsPerSec": 15187.653021299544
+    },
+    {
+      "round": 6,
+      "label": "before",
+      "elapsedMs": 48.147666999999956,
+      "jobsPerSec": 20769.438319825567
+    },
+    {
+      "round": 7,
+      "label": "before",
+      "elapsedMs": 47.51454200000012,
+      "jobsPerSec": 21046.188343770576
+    },
+    {
+      "round": 7,
+      "label": "after",
+      "elapsedMs": 47.79950000000008,
+      "jobsPerSec": 20920.720928043145
+    },
+    {
+      "round": 8,
+      "label": "after",
+      "elapsedMs": 47.59883300000001,
+      "jobsPerSec": 21008.918432937204
+    },
+    {
+      "round": 8,
+      "label": "before",
+      "elapsedMs": 47.34570899999994,
+      "jobsPerSec": 21121.23825202409
+    },
+    {
+      "round": 9,
+      "label": "before",
+      "elapsedMs": 45.98762499999998,
+      "jobsPerSec": 21744.98030720222
+    },
+    {
+      "round": 9,
+      "label": "after",
+      "elapsedMs": 45.922374999999874,
+      "jobsPerSec": 21775.87722760425
+    },
+    {
+      "round": 10,
+      "label": "after",
+      "elapsedMs": 46.015707999999904,
+      "jobsPerSec": 21731.709528407173
+    },
+    {
+      "round": 10,
+      "label": "before",
+      "elapsedMs": 48.19979199999989,
+      "jobsPerSec": 20746.97749733033
+    },
+    {
+      "round": 11,
+      "label": "before",
+      "elapsedMs": 48.24800000000005,
+      "jobsPerSec": 20726.24772011273
+    },
+    {
+      "round": 11,
+      "label": "after",
+      "elapsedMs": 47.62699999999995,
+      "jobsPerSec": 20996.49358557123
+    },
+    {
+      "round": 12,
+      "label": "after",
+      "elapsedMs": 47.10579199999984,
+      "jobsPerSec": 21228.81194737164
+    },
+    {
+      "round": 12,
+      "label": "before",
+      "elapsedMs": 45.57420900000034,
+      "jobsPerSec": 21942.234916243804
+    },
+    {
+      "round": 13,
+      "label": "before",
+      "elapsedMs": 46.66879199999994,
+      "jobsPerSec": 21427.595554648196
+    },
+    {
+      "round": 13,
+      "label": "after",
+      "elapsedMs": 45.8078330000003,
+      "jobsPerSec": 21830.327577381657
+    },
+    {
+      "round": 14,
+      "label": "after",
+      "elapsedMs": 46.922458000000006,
+      "jobsPerSec": 21311.75651539823
+    },
+    {
+      "round": 14,
+      "label": "before",
+      "elapsedMs": 49.334292000000005,
+      "jobsPerSec": 20269.876377267152
+    },
+    {
+      "round": 15,
+      "label": "before",
+      "elapsedMs": 50.50666700000011,
+      "jobsPerSec": 19799.366289602873
+    },
+    {
+      "round": 15,
+      "label": "after",
+      "elapsedMs": 48.2981249999998,
+      "jobsPerSec": 20704.737502749933
+    },
+    {
+      "round": 16,
+      "label": "after",
+      "elapsedMs": 47.86412500000006,
+      "jobsPerSec": 20892.474269612132
+    },
+    {
+      "round": 16,
+      "label": "before",
+      "elapsedMs": 46.837540999999874,
+      "jobsPerSec": 21350.394974834453
+    },
+    {
+      "round": 17,
+      "label": "before",
+      "elapsedMs": 45.54933399999982,
+      "jobsPerSec": 21954.217815786375
+    },
+    {
+      "round": 17,
+      "label": "after",
+      "elapsedMs": 45.74233299999969,
+      "jobsPerSec": 21861.587164782497
+    },
+    {
+      "round": 18,
+      "label": "after",
+      "elapsedMs": 44.97849999999971,
+      "jobsPerSec": 22232.844581300094
+    },
+    {
+      "round": 18,
+      "label": "before",
+      "elapsedMs": 48.55300000000034,
+      "jobsPerSec": 20596.04967767168
+    },
+    {
+      "round": 19,
+      "label": "before",
+      "elapsedMs": 48.77370900000005,
+      "jobsPerSec": 20502.84918868891
+    },
+    {
+      "round": 19,
+      "label": "after",
+      "elapsedMs": 47.06779199999983,
+      "jobsPerSec": 21245.95094666866
+    },
+    {
+      "round": 20,
+      "label": "after",
+      "elapsedMs": 45.95320800000036,
+      "jobsPerSec": 21761.26637339426
+    },
+    {
+      "round": 20,
+      "label": "before",
+      "elapsedMs": 48.03845799999999,
+      "jobsPerSec": 20816.654855990593
+    }
+  ],
+  "environment": {
+    "cpu": "Apple M1 Pro",
+    "node": "v22.14.0",
+    "sqlite": "3.47.2",
+    "platform": "darwin",
+    "arch": "arm64",
+    "payloadBytes": 251,
+    "journalMode": "wal",
+    "pageSize": 4096,
+    "walAutocheckpoint": 1000,
+    "fullfsync": 0,
+    "background": false,
+    "clients": 1
+  },
+  "beforeExtensionSha256": "b9b0dfb40debc22e73f58c280a9dea3bcc60b0968833816ace179ad3947e071e",
+  "afterExtensionSha256": "1ace278e88ed66a7a4040fa2d094c45e5c2a32fb752e26822f4ff535df7a4dcb"
+}

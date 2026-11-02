@@ -85,6 +85,7 @@ jobs between queues through direct table updates.
 - `claimBatch(count, options?)`: returns jobs ordered by priority/FIFO; count is `1..1000`.
 - `get(id)`: returns a job or `null`.
 - `ack(id, receipt)`: returns a boolean.
+- `ackBatch([{id, receipt}, ...])`: atomically acknowledges up to 1000 receipts in this database, returning booleans in input order.
 - `retry(id, receipt, {delaySeconds?, error?}?)`: uses an explicit delay, default zero; returns a boolean.
 - `fail(id, receipt, error, {permanent?}?)`: applies configured backoff; `permanent: true` sends the job directly to dead-letter.
 - `heartbeat(id, receipt, leaseSeconds?)`: extends the lease, default 30 seconds; returns a boolean.
@@ -139,12 +140,19 @@ Worker options:
 - `workerId`: defaults to a random identifier including the process ID.
 - `heartbeatIntervalMs`: defaults to `min(10000, floor(leaseSeconds*1000/3))`; at least 25ms and at most half the lease or Node's maximum timer interval.
 - `signal`: an AbortSignal requesting graceful shutdown.
+- `batchSize`: claims up to 1..1000 jobs per call, default 1.
+- `ackBatchSize`: outcomes per transaction, default batchSize, range 1..1000.
+- `flushIntervalMs`: completed-outcome flush delay, default 10, range 0..60000.
+
+Batch mode prefetches a bounded group, heartbeats queued work and buffered outcomes,
+and commits only finished handlers. See the [scaling guide](SCALING.md) for batch
+flush semantics and the ShardedSQLiteQueue API.
 
 Concurrency means async handlers sharing the Node event loop. SQLite calls are
 synchronous; CPU work, synchronous I/O, or a long busy timeout can delay heartbeats.
 Use worker threads/processes for CPU-heavy work, with each worker opening its own store.
 
-`worker.close()` stops new claims, waits for active handlers with heartbeats and
+`worker.close()` stops new claims, drains all reserved handlers with heartbeats and
 acknowledgements, then resolves. `worker.closed` is also awaitable. Close workers
 before `store.close()`. Do not await a worker's close from its own handler or hold
 a transaction across an await. Close does not forcibly kill a handler that never
