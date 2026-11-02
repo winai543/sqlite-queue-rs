@@ -1,0 +1,8 @@
+/target/
+*.db
+*.db-shm
+*.db-wal
+__pycache__/
+/node_modules/
+/native/
+*.tgz

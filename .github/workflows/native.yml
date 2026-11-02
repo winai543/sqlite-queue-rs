@@ -1,0 +1,102 @@
+name: Native builds
+
+'on':
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.key }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: darwin-arm64
+            runner: macos-15
+            arch: arm64
+            target: aarch64-apple-darwin
+          - key: darwin-x64
+            runner: macos-15-intel
+            arch: x64
+            target: x86_64-apple-darwin
+          - key: linux-arm64
+            runner: ubuntu-22.04-arm
+            arch: arm64
+            target: aarch64-unknown-linux-gnu
+          - key: linux-x64
+            runner: ubuntu-22.04
+            arch: x64
+            target: x86_64-unknown-linux-gnu
+          - key: win32-arm64
+            runner: windows-11-arm
+            arch: arm64
+            target: aarch64-pc-windows-msvc
+          - key: win32-x64
+            runner: windows-2022
+            arch: x64
+            target: x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          architecture: ${{ matrix.arch }}
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.91.1'
+          targets: ${{ matrix.target }}
+          components: rustfmt, clippy
+      - run: npm ci --ignore-scripts
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --target ${{ matrix.target }} -- -D warnings
+      - run: npm run build:native -- --target ${{ matrix.target }}
+      - run: node scripts/verify-native.cjs --runtime
+      - run: npm run test:js
+      - run: npm run test:types
+      - run: npm run demo
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          architecture: ${{ matrix.arch }}
+      - name: Test the same native binary on Node 24
+        run: npm run test:js
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ matrix.key }}
+          path: native/
+          if-no-files-found: error
+          retention-days: 14
+
+  package:
+    name: Package all platforms
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: native-*
+          path: native/
+          merge-multiple: true
+      - run: npm run native:verify -- --all --runtime
+      - run: npm run pack:all
+      - run: npm run test:package -- --all ./*.tgz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sqlite-queue-rs-all-platforms
+          path: '*.tgz'
+          if-no-files-found: error
+          retention-days: 14

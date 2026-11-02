@@ -1,0 +1,58 @@
+{
+  "name": "sqlite-queue-rs",
+  "version": "0.3.0",
+  "description": "SQLite job queues for Node.js, powered by a Rust loadable extension",
+  "license": "UNLICENSED",
+  "main": "./lib/index.cjs",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.cjs"
+    }
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "lib/",
+    "native/",
+    "scripts/",
+    ".github/workflows/native.yml",
+    "examples/*.mjs",
+    "src/",
+    "Cargo.toml",
+    "Cargo.lock",
+    "docs/"
+  ],
+  "scripts": {
+    "build:native": "node scripts/build-native.cjs",
+    "native:list": "node scripts/build-native.cjs --list",
+    "native:verify": "node scripts/verify-native.cjs",
+    "pack:all": "node scripts/pack-all.cjs",
+    "prepack": "node scripts/prepare-package.cjs",
+    "prepublishOnly": "node scripts/check-publish.cjs",
+    "pretest": "npm run build:native",
+    "test": "npm run test:js",
+    "test:js": "node --test test/queue.test.cjs test/native.test.cjs",
+    "test:package": "node scripts/smoke-package.cjs",
+    "test:types": "tsc -p test/tsconfig.json",
+    "demo": "node examples/demo.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/winai543/sqlite-queue-rs.git"
+  },
+  "homepage": "https://github.com/winai543/sqlite-queue-rs#readme",
+  "bugs": {
+    "url": "https://github.com/winai543/sqlite-queue-rs/issues"
+  }
+}
